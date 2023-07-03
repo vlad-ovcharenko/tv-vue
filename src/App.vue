@@ -59,14 +59,14 @@
       </div>
 
       <v-pagination
-        v-if="state.pagesSearched.length"
+        v-show="state.pagesSearched.length > 1"
         :length="state.pagesSearched.length"
         :model-value="state.currentSearchedPage"
         @update:model-value="toggleSearchedPage"
       />
 
-      <v-dialog v-model="state.isFavoritesModal" width="auto" style="padding: 20px">
-        <v-card style="padding: 20px 20px 0">
+      <v-dialog v-model="state.isFavoritesModal" max-width="500"  style="padding: 20px">
+        <v-card style="display: block; padding: 20px 20px 0">
           <p v-show="!state.favorites.length">You have not favorites for now</p>
           <v-card
             v-for="movie in state.favorites"
@@ -260,6 +260,8 @@ async function toggleSearchedPage(pageNumber: number) {
 function removeSearch() {
   state.isActiveMovieSearch = false;
   state.movieSearchText = '';
+  state.pagesSearched.length = 0
+  state.currentSearchedPage = 1
 }
 </script>
 

@@ -1,10 +1,10 @@
 <template>
   <v-app style="max-width: 790px; margin: 0 auto; padding: 20px">
     <v-alert
-        style="padding-top: 40px; padding-bottom: 40px; margin-bottom: 40px;"
-        type="warning"
-        title="Remember"
-        text="I have completed this Technical Assessment for FREE. Please note that certain aspects of the application may be less than ideal or exhibit some instability, as the focus has been on creating a Minimum Viable Product (MVP). I dedicated approximately 7 hours to the completion of this task. Thank you for your understanding."
+      style="padding-top: 40px; padding-bottom: 40px; margin-bottom: 40px"
+      type="warning"
+      title="Remember"
+      text="I have completed this Technical Assessment for FREE. Please note that certain aspects of the application may be less than ideal or exhibit some instability, as the focus has been on creating a Minimum Viable Product (MVP). I dedicated approximately 7 hours to the completion of this task. Thank you for your understanding."
     ></v-alert>
     <!--    Remember I did this task for Free, some aspect of application non-ideal -->
     <div class="error-container" v-if="state.isError">
@@ -31,30 +31,19 @@
 
       <div class="movies" v-show="state.isActiveMovieSearch">
         <template v-for="(page, pIndex) in state.pagesSearched">
-          <!-- I know that movie card should be a component, I just have not time for this in free tech task-->
-          <v-card
+          <card-movie
+            v-for="movie in page"
+            :key="movie.imdbID"
+            :movie="movie"
+            :index="pIndex"
+            :current-searched-page="state.currentSearchedPage"
+            :is-favorite="!state.favorites.includes(movie)"
             :style="{
               display: pIndex === state.currentSearchedPage - 1 ? 'flex' : 'none !important'
             }"
-            v-for="movie in page"
-            :key="movie.imdbID"
-            :href="`https://www.imdb.com/title/${movie.imdbID}`"
-            class="movie"
-            target="_blank"
-          >
-            <v-card-title class="title">{{ movie.Title }}</v-card-title>
-            <v-card-subtitle class="year">{{ movie.Year }}</v-card-subtitle>
-            <v-card-actions>
-              <v-btn
-                v-if="!state.favorites.includes(movie)"
-                @click.prevent="addFavorite($event, movie)"
-                >Add to Favorites
-              </v-btn>
-              <v-btn v-else @click.prevent="removeFavorites($event, movie)">
-                remove from favorites
-              </v-btn>
-            </v-card-actions>
-          </v-card>
+            @addFavorite="addFavorite"
+            @removeFavorites="removeFavorites"
+          />
         </template>
       </div>
 
@@ -65,23 +54,19 @@
         @update:model-value="toggleSearchedPage"
       />
 
-      <v-dialog v-model="state.isFavoritesModal" max-width="500"  style="padding: 20px">
+      <v-dialog v-model="state.isFavoritesModal" max-width="500" style="padding: 20px">
         <v-card style="display: block; padding: 20px 20px 0">
           <p v-show="!state.favorites.length">You have not favorites for now</p>
-          <v-card
+          <card-movie
             v-for="movie in state.favorites"
             :key="movie.imdbID"
-            :href="`https://www.imdb.com/title/${movie.imdbID}`"
-            class="movie"
-            target="_blank"
-            style="margin-top: 20px;"
-          >
-            <v-card-title class="title">{{ movie.Title }}</v-card-title>
-            <v-card-subtitle class="year">{{ movie.Year }}</v-card-subtitle>
-            <v-card-actions>
-              <v-btn @click.prevent="removeFavorites($event, movie)"> remove from favorites </v-btn>
-            </v-card-actions>
-          </v-card>
+            :movie="movie"
+            :current-searched-page="state.currentSearchedPage"
+            :is-favorite="!state.favorites.includes(movie)"
+            style="margin-top: 20px"
+            @addFavorite="addFavorite"
+            @removeFavorites="removeFavorites"
+          />
           <v-card-actions style="margin-top: 20px">
             <v-btn color="primary" block @click="state.isFavoritesModal = false">Close </v-btn>
           </v-card-actions>
@@ -96,27 +81,16 @@
           :key="i"
         ></v-skeleton-loader>
         <template v-for="(page, pIndex) in state.pages">
-          <v-card
-            :style="{ display: pIndex === state.currentPage - 1 ? 'flex' : 'none !important' }"
+          <card-movie
             v-for="movie in page"
             :key="movie.imdbID"
-            :href="`https://www.imdb.com/title/${movie.imdbID}`"
-            class="movie"
-            target="_blank"
-          >
-            <v-card-title class="title">{{ movie.Title }}</v-card-title>
-            <v-card-subtitle class="year">{{ movie.Year }}</v-card-subtitle>
-            <v-card-actions>
-              <v-btn
-                v-if="!state.favorites.includes(movie)"
-                @click.prevent="addFavorite($event, movie)"
-                >Add to Favorites
-              </v-btn>
-              <v-btn v-else @click.prevent="removeFavorites($event, movie)">
-                remove from favorites
-              </v-btn>
-            </v-card-actions>
-          </v-card>
+            :style="{ display: pIndex === state.currentPage - 1 ? 'flex' : 'none !important' }"
+            :movie="movie"
+            :current-searched-page="state.currentSearchedPage"
+            :is-favorite="!state.favorites.includes(movie)"
+            @addFavorite="addFavorite"
+            @removeFavorites="removeFavorites"
+          />
         </template>
       </div>
 
@@ -144,20 +118,8 @@
 // https://jsonmock.hackerrank.com/api/movies/search/?Title=${title}&page=${page}
 import { reactive } from 'vue';
 import { VSkeletonLoader } from 'vuetify/labs/VSkeletonLoader';
-
-interface IMovie {
-  Title: string;
-  Year: number;
-  imdbID: string;
-}
-
-interface IMoviesResponse {
-  page: number;
-  per_page: number;
-  total: number;
-  total_pages: number;
-  data: IMovie[];
-}
+import type { IMovie, IMoviesResponse } from '@/types';
+import CardMovie from '@/components/card-movie.vue';
 
 const state = reactive({
   pages: [] as IMovie[][],
@@ -172,6 +134,8 @@ const state = reactive({
   isSearchLoading: false,
   currentSearchedPage: 1
 });
+
+getPage(1);
 
 function togglePage(pageNumber: number) {
   getPage(pageNumber);
@@ -188,14 +152,11 @@ async function getPage(pageNumber: number) {
     // Updating the page count with each fetch to handle potential discrepancies if the total number of pages changes.
     state.pages.length = total_pages;
     state.pages[page - 1] = data;
-    console.log();
   } catch (e) {
     state.isError = true;
-    console.log(e);
+    console.error(e);
   }
 }
-
-getPage(1);
 
 function findPage() {
   const num = Number(state.pageSearchText);
@@ -209,7 +170,6 @@ function findPage() {
 function addFavorite(ev: MouseEvent, movie: IMovie) {
   const res = state.favorites.includes(movie);
   if (!res) state.favorites.push(movie);
-  console.log(res);
 }
 
 function removeFavorites(ev: MouseEvent, movie: IMovie) {
@@ -253,19 +213,19 @@ async function toggleSearchedPage(pageNumber: number) {
     state.pagesSearched[pageNumber - 1] = data;
   } catch (e) {
     state.isError = true;
-    console.log(e);
+    console.error(e);
   }
 }
 
 function removeSearch() {
   state.isActiveMovieSearch = false;
   state.movieSearchText = '';
-  state.pagesSearched.length = 0
-  state.currentSearchedPage = 1
+  state.pagesSearched.length = 0;
+  state.currentSearchedPage = 1;
 }
 </script>
 
-<style>
+<style scoped>
 .movies {
   padding: 40px 0;
   width: 100%;
@@ -276,23 +236,13 @@ function removeSearch() {
   justify-content: center;
 }
 
-.movie {
-  display: flex !important;
-  flex-direction: column;
-}
-
-.title {
-  white-space: normal !important;
-  flex-grow: 1 !important;
-}
-
 .page-search {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-gap: 30px;
   justify-content: center;
   margin-top: 20px;
-  @media screen and (max-width: 600px){
+  @media screen and (max-width: 600px) {
     display: block;
   }
 }

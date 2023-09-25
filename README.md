@@ -21,4 +21,5 @@ Create a movie listing application using Vue.js that fetches a list of movies fr
 [API Endpoint](https://jsonmock.hackerrank.com/api/movies/search/?Title=${title}&page=${page})
 
 **Note**: I dedicated approximately 7 hours to this assignment; therefore, it may not be in its perfect form (just becouse of 7hrs).
-[**API Endpoint**](https://slim-tv.surge.sh/)
+
+[**Housted website**](https://slim-tv.surge.sh/)
